@@ -1,0 +1,8 @@
+gz批量zip包文件内容查询工具
+1. 环境：python2.7
+2. 使用方法：
+   shell 运行
+   python gz_zip_parser.py param1 param2
+   其中param1为欲查询的文本(支持正则表达式)，param2为表示查询范围的文件夹路径
+3. 查询命中会将命中结果所在的zip包、bcp文件、所在行号以及整行信息打印输出
+4. 查询范围里如果出现无zip包、zip文件中无bcp文件、bcp文件内容为空等异常情况，也会将相关信息打印输出
