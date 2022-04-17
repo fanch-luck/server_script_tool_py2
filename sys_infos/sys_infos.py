@@ -7,7 +7,21 @@
 # -----------------------------------------------------------
 import sys
 import os
+import re
 from collections import OrderedDict
+
+
+def ver_info():
+    os.system("cat /proc/version > /tmp/verinfotmplog")
+    with open("/tmp/verinfotmplog", "r") as f:
+        lines = f.read()
+        if "Red Hat" in lines:
+            os.system("cat /etc/redhat-release")
+        elif "Ubuntu" in lines:
+            os.system("cat /etc/issue")
+        else:
+            os.system("cat /etc/issue")
+    os.system("rm /tmp/verinfotmplog -f")
 
 
 def cpu_information():
@@ -35,27 +49,51 @@ def cpu_information():
 
 def mem_info():
     meminfo = OrderedDict()
-    os.system("free -h > /tmp/meminfotmplog")
-    with open("/tmp/meminfotmplog", "r") as f:
+    os.system("free -h > /tmp/freeinfotmplog")
+    with open("/tmp/freeinfotmplog", "r") as f:
         ll = []
         for line in f:
             if line != '\n':
                 # 非空行
                 ll.append(line.split())
-        meminfo[ll[0][0]] = ll[1][1]
-        meminfo[ll[0][1]] = ll[1][2]
-        # print(ll)
+    meminfo[ll[0][0]] = ll[1][1]
+    meminfo[ll[0][1]] = ll[1][2]
+    os.system("rm /tmp/freeinfotmplog -f")
     return meminfo
-
-    os.system("rm /tmp/meminfotmplog -f")
 
 
 def disk_info():
     diskinfo = OrderedDict()
-    os.system("lsblk")
+    os.system("lsblk > /tmp/lsblkinfotmplog")
+    with open("/tmp/lsblkinfotmplog", "r") as f:
+        ll = []
+        for line in f:
+            if line != '\n':
+                # 非空行
+                ll.append(line.split())
+    diskinfo[ll[0][0]] = ll[0][3]
+    for line in ll:
+        matched = re.match("^sd[a-z]$", line[0], flags=0)
+        if matched:
+            diskinfo[line[0]] = line[3]
+    os.system("rm /tmp/lsbinfotmplog -f")
+    os.system("df -h > /tmp/dfinfotmplog")
+    with open("/tmp/dfinfotmplog", "r") as f:
+        ll = []
+        for line in f:
+            if line != '\n':
+                # 非空行
+                ll.append(line.split())
+    for line in ll:
+        matched = re.match("^\/dev\/sd[a-z]\d+", line[0], flags=0)
+        if matched:
+            diskinfo[line[0]] = "容量{} 已用{} 可用{} 已用{} 挂载点{}".format(*line[1:6])
+    os.system("rm /tmp/dfinfotmplog -f")
+    return diskinfo
 
 
 if __name__ == "__main__":
+    ver_info()
     params = sys.argv[1:]
     if params[0] == "cpu_info" or "sys_info":
         print("CPU")
@@ -65,10 +103,17 @@ if __name__ == "__main__":
                   "physicalid(CPU编号)={} cores(内核数)={} siblings(逻辑核数)={}".format(
                 proc, cpu_info[proc]['model name'],
                 cpu_info[proc]['physical id'], cpu_info[proc]['cpu cores'], cpu_info[proc]['siblings']))
-        print("\n")
+        print("")
     if params[0] == 'mem_info' or "sys_info":
-        print("Memory（总计，已使用）")
+        print("Memory（Total & Used）")
         mem_info = mem_info()
         for k in mem_info:
             print(k, mem_info[k])
-        print("\n")
+        print("")
+    if params[0] == 'disk_info' or 'sys_info':
+        print("Disk & Parts")
+        disk_info = disk_info()
+        for k in disk_info:
+            print(k, disk_info[k])
+        print('\n')
+
